@@ -1,0 +1,121 @@
+# ==========================================
+# 📺 Dizi Bot - .htaccess Configuration
+# URL rewrites, security, and optimization
+# ==========================================
+
+# Enable RewriteEngine
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Güvenlik: Admin panel sadece POST ve GET
+    RewriteCond %{REQUEST_METHOD} !^(GET|POST)$
+    RewriteCond %{REQUEST_URI} admin\.php
+    RewriteRule .* - [F,L]
+
+    # Cache klasörüne doğrudan erişimi engelle
+    RewriteRule ^cache/.*\.cache$ - [F,L]
+    RewriteRule ^cache/.*\.html$ - [F,L]
+
+    # Debug dosyalarına erişimi engelle
+    RewriteRule ^cache/debug_.*$ - [F,L]
+</IfModule>
+
+# ==========================================
+# GÜVENLİK AYARLARI
+# ==========================================
+
+# Directory listing'i kapat
+Options -Indexes
+
+# .htaccess ve .htpasswd dosyalarını gizle
+<FilesMatch "^\.ht">
+    Require all denied
+</FilesMatch>
+
+# PHP dosyalarının gösterilmesini engelle (cache klasörü için)
+<FilesMatch "\.php$">
+    <If "%{REQUEST_URI} =~ m#^/cache/#">
+        Require all denied
+    </If>
+</FilesMatch>
+
+# ==========================================
+# PERFORMANS OPTİMİZASYONU
+# ==========================================
+
+# Gzip sıkıştırma
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE text/javascript
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/json
+    AddOutputFilterByType DEFLATE application/x-mpegurl
+</IfModule>
+
+# Browser Caching
+<IfModule mod_expires.c>
+    ExpiresActive On
+
+    # M3U dosyaları için cache
+    ExpiresByType application/x-mpegurl "access plus 1 hour"
+
+    # Statik dosyalar
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+</IfModule>
+
+# ==========================================
+# PHP AYARLARI
+# ==========================================
+
+<IfModule mod_php7.c>
+    php_value upload_max_filesize 50M
+    php_value post_max_size 50M
+    php_value max_execution_time 300
+    php_value max_input_time 300
+    php_value memory_limit 256M
+</IfModule>
+
+# ==========================================
+# CORS (IPTV oynatıcıları için)
+# ==========================================
+
+<IfModule mod_headers.c>
+    # M3U dosyaları için CORS
+    <FilesMatch "\.(m3u|m3u8)$">
+        Header set Access-Control-Allow-Origin "*"
+        Header set Access-Control-Allow-Methods "GET, OPTIONS"
+        Header set Access-Control-Allow-Headers "Content-Type"
+    </FilesMatch>
+
+    # PHP endpoint'leri için
+    <FilesMatch "\.php$">
+        Header set X-Content-Type-Options "nosniff"
+        Header set X-Frame-Options "SAMEORIGIN"
+        Header set X-XSS-Protection "1; mode=block"
+    </FilesMatch>
+</IfModule>
+
+# ==========================================
+# ERROR PAGES (Opsiyonel)
+# ==========================================
+
+# ErrorDocument 404 /404.html
+# ErrorDocument 500 /500.html
+
+# ==========================================
+# HOTLINK PROTECTION (Opsiyonel)
+# ==========================================
+
+# M3U dosyalarının hotlink'ini engelle
+# <IfModule mod_rewrite.c>
+#     RewriteEngine on
+#     RewriteCond %{HTTP_REFERER} !^$
+#     RewriteCond %{HTTP_REFERER} !^http(s)?://(www\.)?yourdomain.com [NC]
+#     RewriteRule \.(m3u|m3u8)$ - [NC,F,L]
+# </IfModule>
