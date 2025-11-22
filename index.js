@@ -15,7 +15,7 @@ const listVideo = require("./src/videos");
 const rectv = require("./src/rectv");
 const tvdiziler = require("./src/tvdiziler");
 const dizipal1513 = require("./src/dizipal1513");
-const neonspor = require("./src/neonspor");
+const zeusspor = require("./src/zeusspor");
 const path = require("path");
 const NodeCache = require("node-cache");
 const { v4: uuidv4 } = require('uuid');
@@ -43,32 +43,9 @@ const myCache = new NodeCache({
 // Static dosyalar
 app.use(express.static(path.join(__dirname, "static")));
 
-// NeonSpor stream URL'lerini periyodik olarak güncelle (canlı TV için)
-// Her 5 dakikada bir M3U dosyasından güncel URL'leri çek
-setInterval(async () => {
-    try {
-        console.log(`[NeonSpor] Periodic update: Fetching stream URLs from M3U file...`);
-        const neonsporModule = require("./src/neonspor");
-        if (neonsporModule && typeof neonsporModule.updateStreamUrlsFromGitHub === 'function') {
-            await neonsporModule.updateStreamUrlsFromGitHub();
-        }
-    } catch (error) {
-        console.log(`[NeonSpor] Periodic update error: ${error.message}`);
-    }
-}, 5 * 60 * 1000); // 5 dakikada bir
-
-// İlk başlatmada hemen güncelle
-setTimeout(async () => {
-    try {
-        console.log(`[NeonSpor] Initial update: Fetching stream URLs from M3U file...`);
-        const neonsporModule = require("./src/neonspor");
-        if (neonsporModule && typeof neonsporModule.updateStreamUrlsFromGitHub === 'function') {
-            await neonsporModule.updateStreamUrlsFromGitHub();
-        }
-    } catch (error) {
-        console.log(`[NeonSpor] Initial update error: ${error.message}`);
-    }
-}, 5000); // 5 saniye sonra ilk güncelleme
+// Zeus Spor - M3U dosyası her istekte canlı olarak çekiliyor (cache yok)
+// Periyodik güncelleme yok çünkü linkler sürekli değişiyor
+// Her API çağrısında fresh data çekiliyor
 
 var respond = function (res, data) {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -169,8 +146,8 @@ app.get("/catalog/:type/:id/search=:search", async (req, res, next) => {
         var { type, id, search } = req.params;
         search = search.replace(".json", "");
         
-        // Zeus TV catalog ID'leri: zeustv (series), zeustv-movies (movie) ve neonspor (tv)
-        if (id == "zeustv" || id == "zeustv-movies" || id == "neonspor") {
+        // Zeus TV catalog ID'leri: zeustv (series), zeustv-movies (movie), zeusspor (tv) ve zeusdizi (series)
+        if (id == "zeustv" || id == "zeustv-movies" || id == "zeusspor" || id == "zeusdizi") {
             var cached = myCache.get(search + type)
             if (cached) {
                 console.log(`[CATALOG] Cache hit for "${search}" type "${type}"`);
@@ -184,17 +161,46 @@ app.get("/catalog/:type/:id/search=:search", async (req, res, next) => {
             
             console.log(`[CATALOG] Searching for "${search}" in type "${type}" (catalog: ${id})`);
             
+            // Eğer kategori ID'si ise (zeusspor-category-*), o kategorinin kanallarını döndür
+            if (search.startsWith('zeusspor-category-')) {
+                const categoryName = search.replace('zeusspor-category-', '').replace(/-/g, ' ');
+                console.log(`[CATALOG] Category request: ${categoryName}`);
+                
+                const { categories } = await zeusspor.updateChannelsFromM3U();
+                const categoryChannels = categories[categoryName] || [];
+                
+                var metaData = [];
+                categoryChannels.forEach(channel => {
+                    metaData.push({
+                        id: channel.id,
+                        type: 'tv',
+                        name: `${channel.name} [ZeusSpor]`,
+                        poster: channel.logo || '',
+                        description: `${channel.name} - Canlı TV yayını [${channel.category}]`,
+                        genres: ['Canlı TV', channel.category]
+                    });
+                });
+                
+                myCache.set(search + type, metaData);
+                return respond(res, { 
+                    metas: metaData,
+                    cacheMaxAge: CACHE_MAX_AGE, 
+                    staleRevalidate: STALE_REVALIDATE_AGE, 
+                    staleError: STALE_ERROR_AGE 
+                });
+            }
+            
             var metaData = [];
             
             // Search videolarını çek
             try {
                 var video = [];
                 
-                // TV type ise sadece NeonSpor'dan ara
-                if (type === "tv" && id == "neonspor") {
-                    var neonsporResults = await neonspor.NeonSporSearch(search);
-                    console.log(`[CATALOG] NeonSpor returned ${neonsporResults ? neonsporResults.length : 0} results`);
-                    video = neonsporResults || [];
+                // TV type ise sadece Zeus Spor'dan ara
+                if (type === "tv" && id == "zeusspor") {
+                    var zeussporResults = await zeusspor.ZeusSporSearch(search);
+                    console.log(`[CATALOG] ZeusSpor returned ${zeussporResults ? zeussporResults.length : 0} results`);
+                    video = zeussporResults || [];
                 } else {
                     // Series ve Movie için diğer kaynaklardan ara
                     // 1. RecTV'den ara
@@ -213,18 +219,31 @@ app.get("/catalog/:type/:id/search=:search", async (req, res, next) => {
                     var tvdizilerResults = await tvdiziler.TvDizilerSearch(search);
                     console.log(`[CATALOG] TvDiziler returned ${tvdizilerResults ? tvdizilerResults.length : 0} results`);
                     
-                    // 5. NeonSpor'dan canlı TV kanallarını ara (genel aramalarda da göster)
-                    var neonsporResults = [];
-                    try {
-                        neonsporResults = await neonspor.NeonSporSearch(search);
-                        console.log(`[CATALOG] NeonSpor returned ${neonsporResults ? neonsporResults.length : 0} results for general search`);
-                    } catch (neonsporError) {
-                        console.log(`[CATALOG] NeonSpor search error: ${neonsporError.message}`);
+                    // 5. Zeus Spor'dan canlı TV kanallarını ara (SADECE tv type'ında ve zeusspor catalog'unda)
+                    var zeussporResults = [];
+                    if (type === 'tv' && id === 'zeusspor') {
+                        try {
+                            zeussporResults = await zeusspor.ZeusSporSearch(search);
+                            console.log(`[CATALOG] ZeusSpor returned ${zeussporResults ? zeussporResults.length : 0} results for tv search`);
+                        } catch (zeussporError) {
+                            console.log(`[CATALOG] ZeusSpor search error: ${zeussporError.message}`);
+                        }
                     }
                     
-                    // 6. Tüm kaynaklardan gelen sonuçları birleştir (NeonSpor dahil)
-                    video = [...(rectvResults || []), ...(dizipalResults || []), ...(dizipal1513Results || []), ...(tvdizilerResults || []), ...(neonsporResults || [])];
-                    console.log(`[CATALOG] Total results: ${video.length} (RecTV: ${rectvResults ? rectvResults.length : 0}, Dizipal: ${dizipalResults ? dizipalResults.length : 0}, Dizipal1513: ${dizipal1513Results ? dizipal1513Results.length : 0}, TvDiziler: ${tvdizilerResults ? tvdizilerResults.length : 0}, NeonSpor: ${neonsporResults ? neonsporResults.length : 0})`);
+                    // 6. Zeus Dizi'den dizi son bölümlerini ara (SADECE series type'ında ve zeusdizi catalog'unda)
+                    var zeusdiziResults = [];
+                    if (type === 'series' && id === 'zeusdizi') {
+                        try {
+                            zeusdiziResults = await zeusspor.ZeusDiziSearch(search);
+                            console.log(`[CATALOG] ZeusDizi returned ${zeusdiziResults ? zeusdiziResults.length : 0} results for series search`);
+                        } catch (zeusdiziError) {
+                            console.log(`[CATALOG] ZeusDizi search error: ${zeusdiziError.message}`);
+                        }
+                    }
+                    
+                    // 7. Tüm kaynaklardan gelen sonuçları birleştir
+                    video = [...(rectvResults || []), ...(dizipalResults || []), ...(dizipal1513Results || []), ...(tvdizilerResults || []), ...(zeussporResults || []), ...(zeusdiziResults || [])];
+                    console.log(`[CATALOG] Total results: ${video.length} (RecTV: ${rectvResults ? rectvResults.length : 0}, Dizipal: ${dizipalResults ? dizipalResults.length : 0}, Dizipal1513: ${dizipal1513Results ? dizipal1513Results.length : 0}, TvDiziler: ${tvdizilerResults ? tvdizilerResults.length : 0}, ZeusSpor: ${zeussporResults ? zeussporResults.length : 0}, ZeusDizi: ${zeusdiziResults ? zeusdiziResults.length : 0})`);
                 }
             } catch (searchError) {
                 console.log(`[CATALOG ERROR] Search failed:`, searchError.message);
@@ -245,10 +264,10 @@ app.get("/catalog/:type/:id/search=:search", async (req, res, next) => {
                         }
                     }
                     
-                    // Sadece istenen type'ı ekle (veya NeonSpor canlı TV kanalları için tv type'ını da göster)
-                    // Genel aramalarda (series/movie) canlı TV kanallarını da göster
-                    const isNeonSpor = item.id && item.id.startsWith('neonspor-');
-                    const shouldInclude = (type === item.type) || (isNeonSpor && item.type === 'tv' && (type === 'series' || type === 'movie'));
+                    // Sadece istenen type'ı ekle
+                    // Zeus Spor kanalları SADECE tv type'ında gösterilmeli (series/movie'de gösterilmemeli)
+                    const isZeusSpor = item.id && item.id.startsWith('zeusspor-');
+                    const shouldInclude = (type === item.type) && !(isZeusSpor && type !== 'tv');
                     
                     if (shouldInclude) {
                         // Poster yoksa veya varsayılan SVG ise, meta bilgilerinden çek
@@ -286,9 +305,9 @@ app.get("/catalog/:type/:id/search=:search", async (req, res, next) => {
                             }
                         }
                         
-                        // Kaynak bilgisini ekle (Dizipal, Dizipal1513, RecTV, TvDiziler veya NeonSpor)
-                        const isNeonSpor = item.id && item.id.startsWith('neonspor-');
-                        const source = item.source || (isNeonSpor ? 'NeonSpor' : (isRecTV ? 'RecTV' : (isTvDiziler ? 'TvDiziler' : (isDizipal1513 ? 'Dizipal1513' : 'Dizipal'))));
+                        // Kaynak bilgisini ekle (Dizipal, Dizipal1513, RecTV, TvDiziler veya Zeus Spor)
+                        const isZeusSpor = item.id && item.id.startsWith('zeusspor-');
+                        const source = item.source || (isZeusSpor ? 'ZeusSpor' : (isRecTV ? 'RecTV' : (isTvDiziler ? 'TvDiziler' : (isDizipal1513 ? 'Dizipal1513' : 'Dizipal'))));
                         const itemName = item.title || item.name || 'Unknown';
                         const nameWithSource = `${itemName} [${source}]`;
                         
@@ -376,13 +395,58 @@ app.get('/meta/:type/:id(*)', async (req, res, next) => {
             })
         }
 
-        // RecTV mi TvDiziler mi Dizipal1513 mi NeonSpor mu Dizipal mi kontrol et
-        if (id.startsWith('neonspor-')) {
-            // NeonSpor içeriği - Canlı TV
-            console.log(`[META] NeonSpor content detected: ${id}`);
+        // RecTV mi TvDiziler mi Dizipal1513 mi Zeus Spor mu Dizipal mi kontrol et
+        if (id.startsWith('zeusspor-')) {
+            // Zeus Spor içeriği - Canlı TV
+            console.log(`[META] ZeusSpor content detected: ${id}`);
+            
+            // Kategori meta'sı mı kontrol et
+            if (id.startsWith('zeusspor-category-')) {
+                const categoryName = id.replace('zeusspor-category-', '').replace(/-/g, ' ');
+                console.log(`[META] ZeusSpor category meta: ${categoryName}`);
+                
+                // Kategorinin kanallarını al
+                const { categories } = await zeusspor.updateChannelsFromM3U();
+                const categoryChannels = categories[categoryName] || [];
+                
+                if (categoryChannels.length > 0) {
+                    // Kategori meta'sı - kanalları episodes olarak döndür
+                    var data = {
+                        name: categoryName,
+                        background: categoryChannels[0]?.logo || '',
+                        poster: categoryChannels[0]?.logo || '',
+                        description: `${categoryName} kategorisinde ${categoryChannels.length} kanal bulunmaktadır.`,
+                        genres: ['Kategori', 'Canlı TV'],
+                        type: 'tv',
+                        id: id,
+                        videos: [] // Kanalları episodes olarak ekle
+                    };
+                    
+                    // Her kanalı bir "episode" olarak ekle
+                    categoryChannels.forEach((channel, index) => {
+                        data.videos.push({
+                            id: `${channel.id}-live`,
+                            title: channel.name,
+                            released: new Date().toISOString(),
+                            season: 1,
+                            episode: index + 1,
+                            overview: `${channel.name} - Canlı TV yayını`,
+                            thumbnail: channel.logo || ''
+                        });
+                    });
+                    
+                    myCache.set('meta_' + id, data);
+                    return respond(res, { 
+                        meta: data,
+                        cacheMaxAge: CACHE_MAX_AGE, 
+                        staleRevalidate: STALE_REVALIDATE_AGE, 
+                        staleError: STALE_ERROR_AGE 
+                    });
+                }
+            }
             
             if (type === 'tv') {
-                const meta = await neonspor.NeonSporGetChannelMeta(id);
+                const meta = await zeusspor.ZeusSporGetChannelMeta(id);
                 if (meta) {
                     var data = {
                         name: meta.name,
@@ -558,7 +622,7 @@ app.get('/meta/:type/:id(*)', async (req, res, next) => {
             metaObj = {
                 id: id,
                 type: type,
-                       name: id.startsWith('tvdiziler-') ? `${data.name} [TvDiziler]` : (id.startsWith('rectv-') ? `${data.name} [RecTV]` : (id.startsWith('dizipal1513-') ? `${data.name} [Dizipal1513]` : (id.startsWith('neonspor-') ? `${data.name} [NeonSpor]` : `${data.name} [Dizipal]`))),
+                       name: id.startsWith('tvdiziler-') ? `${data.name} [TvDiziler]` : (id.startsWith('rectv-') ? `${data.name} [RecTV]` : (id.startsWith('dizipal1513-') ? `${data.name} [Dizipal1513]` : (id.startsWith('zeusspor-') ? `${data.name} [ZeusSpor]` : `${data.name} [Dizipal]`))),
                 background: data.background || data.poster || '',
                 country: data.country || "TR",
                 genres: [],
@@ -573,9 +637,9 @@ app.get('/meta/:type/:id(*)', async (req, res, next) => {
             }
             
             // TV type için canlı yayın bölümü ekle
-            if (type === "tv" && id.startsWith('neonspor-')) {
-                // NeonSpor kanalı - Canlı TV için tek bir "episode" göster
-                const episodes = await neonspor.NeonSporGetEpisodes(id, 1);
+            if (type === "tv" && id.startsWith('zeusspor-')) {
+                // Zeus Spor kanalı - Canlı TV için tek bir "episode" göster
+                const episodes = await zeusspor.ZeusSporGetEpisodes(id, 1);
                 if (episodes && Array.isArray(episodes) && episodes.length > 0) {
                     episodes.forEach(element => {
                         if (element && element.id) {
@@ -583,7 +647,7 @@ app.get('/meta/:type/:id(*)', async (req, res, next) => {
                             const episodeNum = element.episode || 1;
                             
                             const streamId = element.id;
-                            const episodeTitle = `${data.name} - Canlı Yayın [NeonSpor]`;
+                            const episodeTitle = `${data.name} - Canlı Yayın [ZeusSpor]`;
                             
                             metaObj.videos.push({
                                 id: streamId,
@@ -859,24 +923,24 @@ app.get('/stream/:type/:id(*)', async (req, res, next) => {
         console.log(`Stream request: type=${type}, id=${id}`);
         
         if (id) {
-            // RecTV mi TvDiziler mi Dizipal1513 mi NeonSpor mu Dizipal mi kontrol et
-            if (id.startsWith('neonspor-')) {
-                // NeonSpor kanal stream - Canlı TV
-                console.log(`[STREAM] NeonSpor channel detected: ${id}`);
+            // RecTV mi TvDiziler mi Dizipal1513 mi Zeus Spor mu Dizipal mi kontrol et
+            if (id.startsWith('zeusspor-')) {
+                // Zeus Spor kanal stream - Canlı TV
+                console.log(`[STREAM] ZeusSpor channel detected: ${id}`);
                 
-                // ID formatı: neonspor-{channelId}-live -> neonspor-{channelId}
+                // ID formatı: zeusspor-{channelId}-live -> zeusspor-{channelId}
                 const channelId = id.replace('-live', '');
-                const videoData = await neonspor.NeonSporGetStreamUrl(channelId);
+                const videoData = await zeusspor.ZeusSporGetStreamUrl(channelId);
                 if (videoData && videoData.url) {
                     return respond(res, {
                         streams: [{
                             url: videoData.url,
-                            title: "NeonSpor [Canlı Yayın]",
+                            title: "Zeus Spor [Canlı Yayın]",
                             subtitles: videoData.subtitles || []
                         }]
                     });
                 }
-                console.log(`[STREAM] NeonSpor stream URL not found for: ${id}`);
+                console.log(`[STREAM] ZeusSpor stream URL not found for: ${id}`);
                 return respond(res, { streams: [] });
             } else if (id.startsWith('dizipal1513-')) {
                 // Dizipal1513 episode stream
@@ -1132,6 +1196,41 @@ app.get('/subtitles/:type/:id(*)', async (req, res, next) => {
         return respond(res, { subtitles: [] });
     }
 })
+
+// Zeus Spor API endpoint'leri
+// Kategorileri döndür
+app.get('/api/zeusspor/categories', async (req, res) => {
+    try {
+        const categories = await zeusspor.ZeusSporGetCategories();
+        return respond(res, { categories });
+    } catch (error) {
+        console.log(`[API] Get categories error: ${error.message}`);
+        return respond(res, { categories: [] });
+    }
+});
+
+// Kategoriye göre kanalları döndür
+app.get('/api/zeusspor/category/:categoryName', async (req, res) => {
+    try {
+        const categoryName = decodeURIComponent(req.params.categoryName);
+        const channels = await zeusspor.ZeusSporGetChannelsByCategory(categoryName);
+        return respond(res, { channels });
+    } catch (error) {
+        console.log(`[API] Get channels by category error: ${error.message}`);
+        return respond(res, { channels: [] });
+    }
+});
+
+// Tüm kanalları döndür
+app.get('/api/zeusspor/channels', async (req, res) => {
+    try {
+        const { channels } = await zeusspor.updateChannelsFromM3U();
+        return respond(res, { channels });
+    } catch (error) {
+        console.log(`[API] Get all channels error: ${error.message}`);
+        return respond(res, { channels: [] });
+    }
+});
 
 async function WriteSubtitles(url, name) {
     try {

@@ -331,6 +331,162 @@ module.exports = function landing(manifest, hostingUrl) {
             font-size: 0.9em;
         }
         
+        /* Zeus Spor Section */
+        .zeusspor-section {
+            width: 100%;
+            margin-top: 60px;
+            animation: fadeInUp 1s ease 0.9s both;
+        }
+        
+        .zeusspor-title {
+            font-size: 2em;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .zeusspor-container {
+            display: flex;
+            gap: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .categories-sidebar {
+            flex: 0 0 300px;
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid rgba(96, 165, 250, 0.2);
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        .categories-sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .categories-sidebar::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 10px;
+        }
+        
+        .categories-sidebar::-webkit-scrollbar-thumb {
+            background: rgba(96, 165, 250, 0.5);
+            border-radius: 10px;
+        }
+        
+        .category-item {
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .category-item:hover {
+            background: rgba(96, 165, 250, 0.2);
+            border-color: rgba(96, 165, 250, 0.4);
+            transform: translateX(5px);
+        }
+        
+        .category-item.active {
+            background: rgba(96, 165, 250, 0.3);
+            border-color: rgba(96, 165, 250, 0.6);
+        }
+        
+        .category-name {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #60a5fa;
+            margin-bottom: 5px;
+        }
+        
+        .category-count {
+            font-size: 0.85em;
+            color: #94a3b8;
+        }
+        
+        .playlist-container {
+            flex: 1;
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid rgba(96, 165, 250, 0.2);
+            min-height: 600px;
+        }
+        
+        .playlist-header {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #60a5fa;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .playlist-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .channel-card {
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 15px;
+            padding: 15px;
+            border: 1px solid rgba(96, 165, 250, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .channel-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(96, 165, 250, 0.5);
+            box-shadow: 0 10px 30px rgba(96, 165, 250, 0.3);
+        }
+        
+        .channel-logo {
+            width: 100%;
+            height: 120px;
+            object-fit: contain;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            background: rgba(15, 23, 42, 0.5);
+        }
+        
+        .channel-name {
+            font-size: 0.95em;
+            font-weight: 500;
+            color: #cbd5e1;
+            word-break: break-word;
+        }
+        
+        .loading-spinner {
+            text-align: center;
+            padding: 40px;
+            color: #60a5fa;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #94a3b8;
+        }
+        
+        .empty-state-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+        
         /* Responsive */
         @media (max-width: 768px) {
             .logo-text {
@@ -352,6 +508,19 @@ module.exports = function landing(manifest, hostingUrl) {
             
             .stats {
                 gap: 25px;
+            }
+            
+            .zeusspor-container {
+                flex-direction: column;
+            }
+            
+            .categories-sidebar {
+                flex: 1;
+                max-height: 300px;
+            }
+            
+            .playlist-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
             }
         }
     </style>
@@ -430,11 +599,128 @@ module.exports = function landing(manifest, hostingUrl) {
             </div>
         </div>
         
+        <!-- Zeus Spor Section -->
+        <div class="zeusspor-section">
+            <div class="zeusspor-title">⚡ Zeus Spor - Canlı TV Kanalları</div>
+            <div class="zeusspor-container">
+                <div class="categories-sidebar" id="categoriesSidebar">
+                    <div class="loading-spinner">📡 Kategoriler yükleniyor...</div>
+                </div>
+                <div class="playlist-container">
+                    <div class="playlist-header" id="playlistHeader">Kategori seçin</div>
+                    <div id="playlistContent">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📺</div>
+                            <p>Sol taraftan bir kategori seçin</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <div class="footer">
             <p>⚡ Zeus TV - Powered by Lightning Technology</p>
             <p style="margin-top: 10px; font-size: 0.85em;">Tüm içerikler Dizipal'a aittir • Sadece eğitim amaçlıdır</p>
         </div>
     </div>
+    
+    <script>
+        const hostingUrl = '${hostingUrl}';
+        let currentCategory = null;
+        
+        // Kategorileri yükle
+        async function loadCategories() {
+            try {
+                const response = await fetch(hostingUrl + '/api/zeusspor/categories');
+                const data = await response.json();
+                
+                const sidebar = document.getElementById('categoriesSidebar');
+                if (data.categories && data.categories.length > 0) {
+                    sidebar.innerHTML = '';
+                    data.categories.forEach(category => {
+                        const categoryItem = document.createElement('div');
+                        categoryItem.className = 'category-item';
+                        categoryItem.innerHTML = \`
+                            <div class="category-name">\${category.name}</div>
+                            <div class="category-count">\${category.count} kanal</div>
+                        \`;
+                        categoryItem.addEventListener('click', () => selectCategory(category.name));
+                        sidebar.appendChild(categoryItem);
+                    });
+                    
+                    // İlk kategoriyi otomatik seç
+                    if (data.categories.length > 0) {
+                        selectCategory(data.categories[0].name);
+                    }
+                } else {
+                    sidebar.innerHTML = '<div class="empty-state"><p>Kategori bulunamadı</p></div>';
+                }
+            } catch (error) {
+                console.error('Kategoriler yüklenirken hata:', error);
+                document.getElementById('categoriesSidebar').innerHTML = '<div class="empty-state"><p>Kategoriler yüklenemedi</p></div>';
+            }
+        }
+        
+        // Kategori seçildiğinde
+        async function selectCategory(categoryName) {
+            // Aktif kategoriyi işaretle
+            document.querySelectorAll('.category-item').forEach(item => {
+                if (item.querySelector('.category-name').textContent === categoryName) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+            
+            currentCategory = categoryName;
+            document.getElementById('playlistHeader').textContent = categoryName;
+            document.getElementById('playlistContent').innerHTML = '<div class="loading-spinner">📡 Kanallar yükleniyor...</div>';
+            
+            try {
+                const encodedCategory = encodeURIComponent(categoryName);
+                const response = await fetch(hostingUrl + '/api/zeusspor/category/' + encodedCategory);
+                const data = await response.json();
+                
+                const playlistContent = document.getElementById('playlistContent');
+                if (data.channels && data.channels.length > 0) {
+                    playlistContent.innerHTML = '<div class="playlist-grid"></div>';
+                    const grid = playlistContent.querySelector('.playlist-grid');
+                    
+                    data.channels.forEach(channel => {
+                        const channelCard = document.createElement('div');
+                        channelCard.className = 'channel-card';
+                        channelCard.innerHTML = \`
+                            <img src="\${channel.logo || 'https://via.placeholder.com/200x120?text=' + encodeURIComponent(channel.name)}" 
+                                 alt="\${channel.name}" 
+                                 class="channel-logo" 
+                                 onerror="this.src='https://via.placeholder.com/200x120?text=' + encodeURIComponent('\${channel.name}')">
+                            <div class="channel-name">\${channel.name}</div>
+                        \`;
+                        channelCard.addEventListener('click', () => playChannel(channel));
+                        grid.appendChild(channelCard);
+                    });
+                } else {
+                    playlistContent.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>Bu kategoride kanal bulunamadı</p></div>';
+                }
+            } catch (error) {
+                console.error('Kanallar yüklenirken hata:', error);
+                document.getElementById('playlistContent').innerHTML = '<div class="empty-state"><p>Kanallar yüklenemedi</p></div>';
+            }
+        }
+        
+        // Kanal oynat
+        function playChannel(channel) {
+            // Stremio'da açmak için
+            const channelId = channel.id;
+            const stremioUrl = \`stremio://\${hostingUrl.replace(/^https?:\\/\\//, '')}/stream/tv/\${channelId}-live.json\`;
+            window.location.href = stremioUrl;
+        }
+        
+        // Sayfa yüklendiğinde kategorileri yükle
+        window.addEventListener('DOMContentLoaded', () => {
+            loadCategories();
+        });
+    </script>
 </body>
 </html>`;
 };
