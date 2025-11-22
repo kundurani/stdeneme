@@ -450,8 +450,8 @@ async function ZeusSporGetCategories() {
         // Kategorileri temizle ve birleştir (emoji'siz versiyonları kullan)
         const cleanedCategories = {};
         Object.keys(categories).forEach(categoryName => {
-            // Emoji'leri kaldır (daha geniş emoji aralığı)
-            const cleanName = categoryName.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').trim();
+            // Emoji'leri kaldır (tüm emoji aralıkları)
+            const cleanName = categoryName.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}]/gu, '').trim();
             if (!cleanedCategories[cleanName]) {
                 cleanedCategories[cleanName] = [];
             }
