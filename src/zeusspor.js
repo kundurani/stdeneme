@@ -444,10 +444,14 @@ async function ZeusSporSearch(query) {
 async function ZeusSporGetCategories() {
     try {
         const { categories } = await updateChannelsFromM3U();
-        return Object.keys(categories).map(categoryName => ({
-            name: categoryName,
-            count: categories[categoryName].length
-        }));
+        return Object.keys(categories).map(categoryName => {
+            // Kategori adından emoji'leri kaldır
+            const cleanName = categoryName.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
+            return {
+                name: cleanName,
+                count: categories[categoryName].length
+            };
+        });
     } catch (error) {
         console.log(`[ZeusSpor] Get categories error: ${error.message}`);
     }
