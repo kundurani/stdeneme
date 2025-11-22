@@ -6,6 +6,10 @@ const fs = require('fs')
 const Path = require("path");
 const express = require("express");
 const app = express();
+
+// Reverse proxy desteği (Render.com, Heroku, vb. için)
+// Bu ayar, x-forwarded-* header'larının doğru şekilde işlenmesini sağlar
+app.set('trust proxy', true);
 const searchVideo = require("./src/search");
 const listVideo = require("./src/videos");
 const rectv = require("./src/rectv");
@@ -76,7 +80,39 @@ var respond = function (res, data) {
 // Ana sayfa
 app.get('/', function (req, res) {
     res.set('Content-Type', 'text/html');
-    res.send(landing(MANIFEST));
+    // Request'ten gelen host bilgisini al (dinamik domain)
+    // Reverse proxy (Render.com, Heroku, vb.) için x-forwarded-* header'larını öncelikle kontrol et
+    let protocol = 'http';
+    if (req.headers['x-forwarded-proto']) {
+        protocol = req.headers['x-forwarded-proto'].split(',')[0].trim();
+    } else if (req.protocol === 'https' || req.secure) {
+        protocol = 'https';
+    }
+    
+    let host = null;
+    // Önce x-forwarded-host'u kontrol et (reverse proxy için)
+    if (req.headers['x-forwarded-host']) {
+        host = req.headers['x-forwarded-host'].split(',')[0].trim();
+    }
+    // Sonra req.get('host') veya req.headers.host
+    if (!host) {
+        host = req.get('host') || req.headers.host;
+    }
+    // Eğer hala yoksa varsayılan
+    if (!host) {
+        host = 'localhost:7000';
+    }
+    
+    const hostingUrl = process.env.HOSTING_URL || `${protocol}://${host}`;
+    console.log(`[LANDING] Request headers:`, {
+        'x-forwarded-proto': req.headers['x-forwarded-proto'],
+        'x-forwarded-host': req.headers['x-forwarded-host'],
+        'host': req.headers.host,
+        'req.protocol': req.protocol,
+        'req.secure': req.secure
+    });
+    console.log(`[LANDING] Using hosting URL: ${hostingUrl}`);
+    res.send(landing(MANIFEST, hostingUrl));
 });
 
 app.get("/:userConf?/configure", function (req, res) {
@@ -84,8 +120,33 @@ app.get("/:userConf?/configure", function (req, res) {
         res.redirect("/addon/configure")
     } else {
         res.set('Content-Type', 'text/html');
+        // Request'ten gelen host bilgisini al (dinamik domain)
+        // Reverse proxy (Render.com, Heroku, vb.) için x-forwarded-* header'larını öncelikle kontrol et
+        let protocol = 'http';
+        if (req.headers['x-forwarded-proto']) {
+            protocol = req.headers['x-forwarded-proto'].split(',')[0].trim();
+        } else if (req.protocol === 'https' || req.secure) {
+            protocol = 'https';
+        }
+        
+        let host = null;
+        // Önce x-forwarded-host'u kontrol et (reverse proxy için)
+        if (req.headers['x-forwarded-host']) {
+            host = req.headers['x-forwarded-host'].split(',')[0].trim();
+        }
+        // Sonra req.get('host') veya req.headers.host
+        if (!host) {
+            host = req.get('host') || req.headers.host;
+        }
+        // Eğer hala yoksa varsayılan
+        if (!host) {
+            host = 'localhost:7000';
+        }
+        
+        const hostingUrl = process.env.HOSTING_URL || `${protocol}://${host}`;
+        console.log(`[LANDING] Using hosting URL: ${hostingUrl}`);
         const newManifest = { ...MANIFEST };
-        res.send(landing(newManifest));
+        res.send(landing(newManifest, hostingUrl));
     }
 });
 

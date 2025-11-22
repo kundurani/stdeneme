@@ -1,5 +1,8 @@
-module.exports = function landing(manifest) {
-    const hostingUrl = process.env.HOSTING_URL || 'http://localhost:7000';
+module.exports = function landing(manifest, hostingUrl) {
+    // Eğer hostingUrl verilmediyse varsayılan değeri kullan
+    if (!hostingUrl) {
+        hostingUrl = process.env.HOSTING_URL || 'http://localhost:7000';
+    }
     // Stremio için URL'den http:// veya https:// kaldır
     const stremioUrl = hostingUrl.replace(/^https?:\/\//, '');
     return `<!DOCTYPE html>
