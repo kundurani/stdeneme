@@ -180,7 +180,9 @@ async function updateChannelsFromM3U() {
                     // group-title="NexaTV" gibi kategorileri çıkar ve kanal adına göre normalize et
                     const groupMatch = line.match(/group-title="([^"]+)"/i);
                     if (groupMatch) {
-                        currentCategory = normalizeCategoryName(groupMatch[1], tempChannelName);
+                        // Önce emoji'leri kaldır, sonra normalize et
+                        const cleanGroupTitle = groupMatch[1].replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
+                        currentCategory = normalizeCategoryName(cleanGroupTitle, tempChannelName);
                     }
                     
                     // tvg-logo çıkar
