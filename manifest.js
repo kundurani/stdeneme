@@ -1,9 +1,9 @@
 require("dotenv").config()
 const manifest = {
     id: 'com.zeustv.addon',
-    version: '1.0.0',
+    version: '2.0.0',
     name: 'Zeus TV',
-    description: "Dizipal'dan Türkçe dizi ve filmleri Stremio'ya getirir. HD kalitede sınırsız içerik!",
+    description: "Dizipal, Dizipal1513, RecTV, TvDiziler ve NeonSpor'dan Türkçe dizi, film ve spor kanallarını Stremio'ya getirir. 5 kaynak, HD kalitede sınırsız içerik!",
     contactEmail: "",
     logo: process.env.HOSTING_URL ? `${process.env.HOSTING_URL}/logo.png` : 'http://localhost:7000/logo.png',
     background: process.env.HOSTING_URL ? `${process.env.HOSTING_URL}/background.jpg` : 'http://localhost:7000/background.jpg',
@@ -11,18 +11,42 @@ const manifest = {
         configurable: false,
         configurationRequired: false,
     },
-    catalogs: [{
-        type: "series",
-        id: "zeustv",
-        name: "Zeus TV Diziler",
-        extra: [{
-            name: "search",
-            isRequired: true
-        }]
-    }],
-    resources: ['stream', 'meta'],
-    types: ['series'],
-    idPrefixes: ["/"]
+    catalogs: [
+        {
+            type: "series",
+            id: "zeustv",
+            name: "Zeus TV Diziler",
+            extra: [{
+                name: "search",
+                isRequired: true
+            }]
+        },
+        {
+            type: "movie",
+            id: "zeustv-movies",
+            name: "Zeus TV Filmler",
+            extra: [{
+                name: "search",
+                isRequired: true
+            }]
+        },
+        {
+            type: "tv",
+            id: "neonspor",
+            name: "NeonSpor Canlı TV",
+            extra: [{
+                name: "search",
+                isRequired: true
+            }]
+        }
+    ],
+    resources: [
+        'catalog',
+        'stream', 
+        'meta'
+    ],
+    types: ['series', 'movie', 'tv'],
+    idPrefixes: [""]
 }
 
 module.exports = manifest;

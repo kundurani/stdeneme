@@ -20,6 +20,7 @@
   "author": "Zeus TV",
   "license": "MIT",
   "dependencies": {
+    "@distube/ytdl-core": "^4.16.12",
     "axios": "^1.7.2",
     "axios-cache-interceptor": "^1.5.3",
     "axios-retry": "^4.4.0",
@@ -30,6 +31,7 @@
     "path": "^0.12.7",
     "stremio-addon-sdk": "^1.6.10",
     "subtitle-converter": "^3.0.12",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "yt-dlp-wrap": "^2.3.12"
   }
 }

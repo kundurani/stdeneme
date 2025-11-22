@@ -36,7 +36,8 @@ async function GetVideos(id) {
         const activeDomain = await detectActiveDomain();
         const proxyUrl = process.env.PROXY_URL || `https://${activeDomain}`;
         
-        console.log(`GetVideos: Fetching video for ${id}`);
+        console.log(`[GetVideos] Fetching video for: ${id}`);
+        console.log(`[GetVideos] Full URL: ${proxyUrl}${id}`);
         
         const response = await axios.get(proxyUrl + id, {
             ...sslfix,
@@ -49,6 +50,10 @@ async function GetVideos(id) {
         
         if (response && response.status === 200) {
             const $ = cheerio.load(response.data);
+            
+            // Tüm iframe'leri bul
+            const allIframes = $('iframe');
+            console.log(`[GetVideos] Found ${allIframes.length} iframes on page`);
             
             // Yöntem 1: vast_new iframe (eski)
             let videoLink = $("#vast_new > iframe").attr("src");
@@ -65,14 +70,16 @@ async function GetVideos(id) {
                 videoLink = $('iframe[data-src]').first().attr('data-src');
             }
             
-            console.log(`Found iframe: ${videoLink}`);
+            console.log(`[GetVideos] Found iframe: ${videoLink}`);
             
             if (videoLink) {
                 const jsFileUrl = await ScrapeVideoUrl(videoLink, proxyUrl);
                 if (jsFileUrl) return jsFileUrl;
             } else {
-                console.log('No iframe found in page');
+                console.log('[GetVideos] No iframe found in page');
             }
+        } else {
+            console.log(`[GetVideos] HTTP ${response?.status} - Failed to fetch page`);
         }
     } catch (error) {
         console.log('GetVideos error:', error.message);

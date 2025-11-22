@@ -2,17 +2,18 @@
 
 > **Türkiye'nin En Hızlı ve En Kapsamlı Stremio Eklentisi**
 
-Dizipal'dan binlerce Türkçe dizi ve filmi HD kalitede Stremio'ya getirir. Lightning technology ile ultra hızlı streaming deneyimi!
+**Dizipal ve RecTV'den** binlerce Türkçe dizi ve filmi HD kalitede Stremio'ya getirir. **2 kaynak**, Lightning technology ile ultra hızlı streaming deneyimi!
 
 ## ✨ Özellikler
 
 - ⚡ **Lightning Fast** - Işık hızında yükleme ve streaming
-- 🎬 **Binlerce İçerik** - Türk dizileri ve filmler
+- 🎬 **2 Kaynak Sistemi** - Dizipal + RecTV (Her içerik için çift kaynak!)
 - 🎯 **HD Kalite** - Kristal netliğinde video kalitesi
 - 🔄 **Otomatik Güncelleme** - Yeni bölümler anında eklenir
 - 🌐 **Akıllı Domain Tespiti** - Her zaman çalışan bağlantı
 - 💾 **Akıllı Cache** - Optimize edilmiş performans
 - 🎨 **Modern Arayüz** - Premium kullanıcı deneyimi
+- 📺 **Kaynak Seçimi** - Her içerik yanında [Dizipal] veya [RecTV] etiketi
 
 ## 📋 Gereksinimler
 
@@ -70,7 +71,8 @@ zeustv-stremio-addon/
 ├── 📄 .gitignore               # Git ignore
 ├── 📄 README.md                # Bu dosya
 ├── 📁 src/
-│   ├── search.js               # İçerik arama ve scraping
+│   ├── search.js               # Dizipal arama ve scraping
+│   ├── rectv.js                # RecTV API entegrasyonu
 │   ├── videos.js               # Video URL çıkarma
 │   ├── sslfix.js               # SSL ayarları
 │   └── landingTemplate.js      # Modern web arayüzü
@@ -240,7 +242,7 @@ git push
 ## ❓ SSS
 
 **S: Yasal mı?**  
-C: Bu proje sadece eğitim amaçlıdır. İçerik Dizipal'a aittir.
+C: Bu proje sadece eğitim amaçlıdır. İçerikler Dizipal ve RecTV'ye aittir.
 
 **S: Ücretsiz mi?**  
 C: Evet, tamamen ücretsiz ve açık kaynak!
@@ -253,7 +255,26 @@ C: Stremio'nun desteklediği tüm cihazlarda (Windows, Mac, Linux, Android, iOS)
 
 ## ⚖️ Yasal Uyarı
 
-Bu proje **sadece eğitim amaçlıdır**. Tüm içerikler Dizipal'a aittir. Kullanıcılar yasal sorumluluğu kabul eder.
+Bu proje **sadece eğitim amaçlıdır**. Tüm içerikler Dizipal ve RecTV'ye aittir. Kullanıcılar yasal sorumluluğu kabul eder.
+
+## 🎯 Kaynak Sistemi
+
+Zeus TV **2 farklı kaynaktan** içerik sunar:
+
+### 📺 Dizipal
+- Türkçe dublaj ve altyazılı içerikler
+- Geniş dizi arşivi
+- Güncel bölümler
+
+### 🎬 RecTV  
+- Alternatif stream kaynağı
+- Farklı kalite seçenekleri
+- Yedek içerik
+
+**Nasıl Kullanılır?**
+- Arama yaptığınızda her içerik için **2 sonuç** göreceksiniz
+- Örnek: `Wednesday [Dizipal]` ve `Wednesday [RecTV]`
+- İstediğiniz kaynağı seçin ve izleyin!
 
 ## 📄 Lisans
 
