@@ -447,14 +447,20 @@ async function ZeusSporSearch(query) {
 async function ZeusSporGetCategories() {
     try {
         const { categories } = await updateChannelsFromM3U();
-        return Object.keys(categories).map(categoryName => {
-            // Kategori adından emoji'leri kaldır
+        // Kategorileri temizle ve birleştir (emoji'siz versiyonları kullan)
+        const cleanedCategories = {};
+        Object.keys(categories).forEach(categoryName => {
             const cleanName = categoryName.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
-            return {
-                name: cleanName,
-                count: categories[categoryName].length
-            };
+            if (!cleanedCategories[cleanName]) {
+                cleanedCategories[cleanName] = [];
+            }
+            cleanedCategories[cleanName] = cleanedCategories[cleanName].concat(categories[categoryName]);
         });
+        
+        return Object.keys(cleanedCategories).map(categoryName => ({
+            name: categoryName,
+            count: cleanedCategories[categoryName].length
+        }));
     } catch (error) {
         console.log(`[ZeusSpor] Get categories error: ${error.message}`);
     }
