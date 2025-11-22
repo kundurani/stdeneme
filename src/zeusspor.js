@@ -450,8 +450,21 @@ async function ZeusSporGetCategories() {
         // Kategorileri temizle ve birleştir (emoji'siz versiyonları kullan)
         const cleanedCategories = {};
         Object.keys(categories).forEach(categoryName => {
-            // Emoji'leri kaldır (tüm emoji aralıkları)
-            const cleanName = categoryName.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}]/gu, '').trim();
+            // Emoji'leri kaldır (tüm emoji aralıkları ve Unicode emoji karakterleri)
+            // Unicode emoji karakterlerini kaldırmak için daha kapsamlı regex
+            const cleanName = categoryName
+                .replace(/[\u{1F300}-\u{1F9FF}]/gu, '') // Emoticons
+                .replace(/[\u{2600}-\u{26FF}]/gu, '') // Miscellaneous Symbols
+                .replace(/[\u{2700}-\u{27BF}]/gu, '') // Dingbats
+                .replace(/[\u{FE00}-\u{FE0F}]/gu, '') // Variation Selectors
+                .replace(/[\u{200D}]/gu, '') // Zero Width Joiner
+                .replace(/[\u{1F600}-\u{1F64F}]/gu, '') // Emoticons
+                .replace(/[\u{1F680}-\u{1F6FF}]/gu, '') // Transport and Map Symbols
+                .replace(/[\u{1F700}-\u{1F77F}]/gu, '') // Alchemical Symbols
+                .replace(/[\u{1F780}-\u{1F7FF}]/gu, '') // Geometric Shapes Extended
+                .replace(/[\u{1F800}-\u{1F8FF}]/gu, '') // Supplemental Arrows-C
+                .replace(/[\u{1F900}-\u{1F9FF}]/gu, '') // Supplemental Symbols and Pictographs
+                .trim();
             if (!cleanedCategories[cleanName]) {
                 cleanedCategories[cleanName] = [];
             }
