@@ -127,7 +127,8 @@ function normalizeCategoryName(category, channelName = '') {
         return 'YEREL';
     }
     
-    return category;
+    // Döndürmeden önce emoji'leri kaldır
+    return category.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
 }
 
 // M3U dosyasını parse et ve kategorilere ayır
