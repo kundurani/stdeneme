@@ -206,6 +206,8 @@ async function updateChannelsFromM3U() {
                         if (currentChannel) {
                             finalCategory = normalizeCategoryName(finalCategory, currentChannel);
                         }
+                        // Kategori adından emoji'leri kaldır
+                        finalCategory = finalCategory.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
                         
                         const channelId = `zeusspor-${currentTvgId || currentChannel.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
                         
