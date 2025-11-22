@@ -102,6 +102,31 @@ function normalizeCategoryName(category, channelName = '') {
         return 'Dizi Son Bölümler';
     }
     
+    // Haber Kanalları
+    if (catLower.includes('haber') || catLower.includes('news')) {
+        return 'HABER';
+    }
+
+    // Dini Kanallar
+    if (catLower.includes('dini') || catLower.includes('islam') || catLower.includes('kuran') || catLower.includes('diyanet')) {
+        return 'DİNİ';
+    }
+
+    // Belgesel Kanalları
+    if (catLower.includes('belgesel') || catLower.includes('documentary') || catLower.includes('geographic') || catLower.includes('dmax') || catLower.includes('tlc')) {
+        return 'BELGESEL';
+    }
+
+    // Sinema-Dizi Kanalları
+    if (catLower.includes('sinema') || catLower.includes('film') || catLower.includes('movie') || catLower.includes('cine')) {
+        return 'SİNEMA-DİZİ';
+    }
+
+    // Yerel Kanallar
+    if (catLower.includes('yerel') || catLower.includes('bursa') || catLower.includes('izmir') || catLower.includes('ankara') || catLower.includes('istanbul') || catLower.includes('tv')) {
+        return 'YEREL';
+    }
+    
     return category;
 }
 
@@ -320,8 +345,11 @@ async function ZeusSporSearch(query) {
                         // Eğer kategori zaten eşleştiyse, kategori meta'sını ekle
                         matchedCategories.delete(channel.category);
                         const categoryChannels = categories[channel.category] || [];
+                        // Kategori ID'sini oluştur - emoji'leri kaldır, sadece harf ve rakam kullan
+                        const categoryNameClean = channel.category.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
+                        const categoryId = `zeusspor-category-${categoryNameClean.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '')}`;
                         results.push({
-                            id: `zeusspor-category-${channel.category.toLowerCase().replace(/\s+/g, '-')}`,
+                            id: categoryId,
                             title: `${channel.category} (${categoryChannels.length} kanal)`,
                             name: channel.category,
                             type: 'tv',
@@ -344,8 +372,11 @@ async function ZeusSporSearch(query) {
             matchedCategories.forEach(catName => {
                 const categoryChannels = categories[catName] || [];
                 if (categoryChannels.length > 0) {
+                    // Kategori ID'sini oluştur - emoji'leri kaldır, sadece harf ve rakam kullan
+                    const categoryNameClean = catName.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
+                    const categoryId = `zeusspor-category-${categoryNameClean.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '')}`;
                     results.push({
-                        id: `zeusspor-category-${catName.toLowerCase().replace(/\s+/g, '-')}`,
+                        id: categoryId,
                         title: `${catName} (${categoryChannels.length} kanal)`,
                         name: catName,
                         type: 'tv',

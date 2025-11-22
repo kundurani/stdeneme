@@ -163,11 +163,35 @@ app.get("/catalog/:type/:id/search=:search", async (req, res, next) => {
             
             // Eğer kategori ID'si ise (zeusspor-category-*), o kategorinin kanallarını döndür
             if (search.startsWith('zeusspor-category-')) {
-                const categoryName = search.replace('zeusspor-category-', '').replace(/-/g, ' ');
-                console.log(`[CATALOG] Category request: ${categoryName}`);
+                // Kategori ID'sinden kategori adını çıkar (emoji'siz)
+                let categoryIdPart = search.replace('zeusspor-category-', '');
+                console.log(`[CATALOG] Category ID part: ${categoryIdPart}`);
                 
                 const { categories } = await zeusspor.updateChannelsFromM3U();
-                const categoryChannels = categories[categoryName] || [];
+                const categoryNames = Object.keys(categories);
+                
+                // Kategori adını eşleştir - emoji'leri kaldırarak karşılaştır
+                let matchedCategoryName = null;
+                
+                // Her kategori adından emoji'leri kaldırıp ID ile karşılaştır
+                for (const catName of categoryNames) {
+                    const catNameClean = catName.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
+                    const catId = catNameClean.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '');
+                    
+                    if (categoryIdPart.toLowerCase() === catId) {
+                        matchedCategoryName = catName;
+                        console.log(`[CATALOG] Category matched: "${categoryIdPart}" -> "${catName}"`);
+                        break;
+                    }
+                }
+                
+                if (!matchedCategoryName) {
+                    console.log(`[CATALOG] Category not found: "${categoryIdPart}". Available categories:`, categoryNames);
+                    return respond(res, { metas: [] });
+                }
+                
+                const categoryChannels = categories[matchedCategoryName] || [];
+                console.log(`[CATALOG] Found ${categoryChannels.length} channels in category "${matchedCategoryName}"`);
                 
                 var metaData = [];
                 categoryChannels.forEach(channel => {
@@ -402,20 +426,44 @@ app.get('/meta/:type/:id(*)', async (req, res, next) => {
             
             // Kategori meta'sı mı kontrol et
             if (id.startsWith('zeusspor-category-')) {
-                const categoryName = id.replace('zeusspor-category-', '').replace(/-/g, ' ');
-                console.log(`[META] ZeusSpor category meta: ${categoryName}`);
+                // Kategori ID'sinden kategori adını çıkar (emoji'siz)
+                let categoryIdPart = id.replace('zeusspor-category-', '');
+                console.log(`[META] ZeusSpor category ID part: ${categoryIdPart}`);
                 
                 // Kategorinin kanallarını al
                 const { categories } = await zeusspor.updateChannelsFromM3U();
-                const categoryChannels = categories[categoryName] || [];
+                const categoryNames = Object.keys(categories);
+                
+                // Kategori adını eşleştir - emoji'leri kaldırarak karşılaştır
+                let matchedCategoryName = null;
+                
+                // Her kategori adından emoji'leri kaldırıp ID ile karşılaştır
+                for (const catName of categoryNames) {
+                    const catNameClean = catName.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
+                    const catId = catNameClean.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '');
+                    
+                    if (categoryIdPart.toLowerCase() === catId) {
+                        matchedCategoryName = catName;
+                        console.log(`[META] Category matched: "${categoryIdPart}" -> "${catName}"`);
+                        break;
+                    }
+                }
+                
+                if (!matchedCategoryName) {
+                    console.log(`[META] Category not found: "${categoryIdPart}". Available categories:`, categoryNames);
+                    return respond(res, { meta: null });
+                }
+                
+                const categoryChannels = categories[matchedCategoryName] || [];
+                console.log(`[META] Found ${categoryChannels.length} channels in category "${matchedCategoryName}"`);
                 
                 if (categoryChannels.length > 0) {
                     // Kategori meta'sı - kanalları episodes olarak döndür
                     var data = {
-                        name: categoryName,
+                        name: matchedCategoryName,
                         background: categoryChannels[0]?.logo || '',
                         poster: categoryChannels[0]?.logo || '',
-                        description: `${categoryName} kategorisinde ${categoryChannels.length} kanal bulunmaktadır.`,
+                        description: `${matchedCategoryName} kategorisinde ${categoryChannels.length} kanal bulunmaktadır.`,
                         genres: ['Kategori', 'Canlı TV'],
                         type: 'tv',
                         id: id,
