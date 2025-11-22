@@ -220,11 +220,11 @@ async function updateChannelsFromM3U() {
                             tvgId: currentTvgId || ''
                         };
                         
-                        // Kategoriye göre ekle
-                        if (!categoriesCache[currentCategory]) {
-                            categoriesCache[currentCategory] = [];
+                        // Kategoriye göre ekle (finalCategory kullan, emoji'siz)
+                        if (!categoriesCache[finalCategory]) {
+                            categoriesCache[finalCategory] = [];
                         }
-                        categoriesCache[currentCategory].push(channelData);
+                        categoriesCache[finalCategory].push(channelData);
                         
                         // Tüm kanallar listesine ekle
                         allChannelsCache.push(channelData);
